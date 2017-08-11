@@ -17,6 +17,7 @@
     "@types/assert": "^0.0.31",
     "@types/bluebird": "^3.5.8",
     "@types/jsonwebtoken": "^7.2.3",
+    "@types/lodash": "^4.14.72",
     "assert": "^1.4.1",
     "bluebird": "^3.5.0",
     "denali": "0.0.26",

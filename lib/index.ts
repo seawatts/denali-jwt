@@ -3,16 +3,18 @@ import { isFunction } from 'util';
 import { sign, decode, verify, VerifyOptions as JwtVerifyOptions, SignOptions, DecodeOptions, VerifyCallback, SignCallback } from 'jsonwebtoken';
 import * as assert from 'assert';
 import { fromNode } from 'bluebird';
+import { set } from 'lodash';
 
 export type GetTokenCallback = (request: ResponderParams) => string;
 export type SecretCallback = (request: ResponderParams, header: string, payload: string | Object, callback?: (error: Error, secret: string) => void) => string;
 
 export interface VerifyOptions extends JwtVerifyOptions {
   secret?: SecretCallback | string | Buffer;
-  getToken: GetTokenCallback
+  getToken: GetTokenCallback,
+  requestProperty: string;
 }
 
- interface Token extends Object {
+interface Token extends Object {
   header: string
   payload: string
 };
@@ -24,6 +26,7 @@ export default createMixin((BaseAction) =>
 
     verifyOptions: VerifyOptions = {
       getToken,
+      requestProperty: 'jwt'
     };
 
     jwt: Object | string;
@@ -41,7 +44,9 @@ export default createMixin((BaseAction) =>
         let decodedToken = decode(token, { complete: true });
 
         let secret = await getSecret(this.verifyOptions.secret, request, decodedToken);
-        this.jwt = await fromNode((cb) => verify(token, secret, this.verifyOptions, cb));
+        let jwt = await fromNode((cb) => verify(token, secret, this.verifyOptions, cb));
+
+        set(this, this.verifyOptions.requestProperty, jwt);
 
       } catch (err) {
         throw new Errors.Unauthorized(err);
