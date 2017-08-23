@@ -2,4 +2,4 @@ import { Addon } from 'denali';
 
 export default class DenaliJwtAddon extends Addon {}
 
-export { default as JWT } from '../lib/index';
+export { default as Mixin } from '../lib/index';

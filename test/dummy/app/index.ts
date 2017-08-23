@@ -1,5 +1,5 @@
-import sourcemaps from 'source-map-support';
-import path from 'path';
+import * as sourcemaps from 'source-map-support';
+import * as path from 'path';
 import Application from './application';
 
 sourcemaps.install();

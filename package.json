@@ -12,15 +12,17 @@
     "addon"
   ],
   "main": "app/addon.js",
+  "types": "lib/index.d.ts",
   "license": "MIT",
   "dependencies": {
     "@types/assert": "^0.0.31",
     "@types/bluebird": "^3.5.8",
     "@types/jsonwebtoken": "^7.2.3",
     "@types/lodash": "^4.14.72",
+    "@types/uuid": "^3.4.1",
     "assert": "^1.4.1",
     "bluebird": "^3.5.0",
-    "denali": "0.0.26",
+    "denali": "0.0.30",
     "denali-cli": "0.0.x",
     "denali-typescript": "^0.0.5",
     "in-publish": "^2.0.0",
@@ -28,10 +30,11 @@
     "jwks-rsa": "^1.2.0",
     "lodash": "^4.16.4",
     "tslint": "^5.6.0",
-    "typescript": "^2.4.2"
+    "typescript": "^2.4.2",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
-    "ava": "^0.17.0"
+    "ava": "^0.21.0"
   },
   "ava": {
     "plugins": [],

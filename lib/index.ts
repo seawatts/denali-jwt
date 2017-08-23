@@ -1,57 +1,71 @@
-import { createMixin, Errors, ResponderParams } from 'denali';
+import { createMixin, Errors, ResponderParams, Container } from 'denali';
+import { verify, decode } from 'jsonwebtoken';
 import { isFunction } from 'util';
-import { sign, decode, verify, VerifyOptions as JwtVerifyOptions, SignOptions, DecodeOptions, VerifyCallback, SignCallback } from 'jsonwebtoken';
 import * as assert from 'assert';
 import { fromNode } from 'bluebird';
 import { set } from 'lodash';
+import * as uuid from 'uuid';
 
-export type GetTokenCallback = (request: ResponderParams) => string;
-export type SecretCallback = (request: ResponderParams, header: string, payload: string | Object, callback?: (error: Error, secret: string) => void) => string;
+type MiddlewareFactory = (container: Container) => Promise<Function>;
 
-export interface VerifyOptions extends JwtVerifyOptions {
-  secret?: SecretCallback | string | Buffer;
-  getToken: GetTokenCallback,
-  requestProperty: string;
+export async function jwt(verifyOptions: VerifyOptions) {
+  return async function middleware(request: ResponderParams) {
+    if (validCorsPreflight(request)) {
+      return;
+    }
+
+    assert(verifyOptions, 'You must define on verifyOptions this action');
+
+    let {
+      secret,
+      getToken,
+      requestProperty
+    } = verifyOptions;
+
+    assert(secret, 'You must define on verifyOptions.secret this action');
+
+    try {
+      let getTokenCallback = getToken ? getToken : defaultGetToken;
+      const token = getTokenCallback(request);
+      let decodedToken = decode(token, { complete: true });
+
+      let decodedSecret = await getSecret(secret, request, decodedToken);
+      let jwt = await fromNode((cb) => verify(token, decodedSecret, verifyOptions, cb));
+
+      set(this, requestProperty || 'jwt', jwt);
+
+    } catch (err) {
+      throw new Errors.Unauthorized(err);
+    }
+  }
 }
 
-interface Token extends Object {
-  header: string
-  payload: string
-};
-
 export default createMixin((BaseAction) =>
-  class JWTAction extends BaseAction {
-
-    before = ['verifyJwt', 'decodeJwt'];
-
-    verifyOptions: VerifyOptions = {
-      getToken,
-      requestProperty: 'jwt'
-    };
-
+  class JwtAction extends BaseAction {
+    before = ['denali-jwt_verifyJwt'];
     jwt: Object | string;
 
-    async verifiyJwt(request: ResponderParams) {
-      if (validCorsPreflight(request)) {
-        return;
-      }
+    denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
+      let middlewareId = uuid.v4();
+      return async function denaliMiddlewareWrapper() {
+        let meta = this.container.metaFor(this);
 
-      assert(this.verifyOptions, 'You must define on verifyOptions this action');
-      assert(this.verifyOptions.secret, 'You must define on verifyOptions.secret this action');
+        if (!meta.middlewareCache) {
+          let middlewareCache: { [id: string]: MiddlewareFactory } = {};
+          meta.middlewareCache = middlewareCache;
+        }
 
-      try {
-        const token = this.verifyOptions.getToken(request);
-        let decodedToken = decode(token, { complete: true });
+        let middleware = meta.middlewareCache[middlewareId];
 
-        let secret = await getSecret(this.verifyOptions.secret, request, decodedToken);
-        let jwt = await fromNode((cb) => verify(token, secret, this.verifyOptions, cb));
+        if (!middleware) {
+          middleware = meta.middlewareCache[middlewareId] = await middlewareFactory(this.container);
+        }
 
-        set(this, this.verifyOptions.requestProperty, jwt);
-
-      } catch (err) {
-        throw new Errors.Unauthorized(err);
-      }
+        return middleware(...arguments);
+      };
     }
+
+    'denali-jwt_verifyJwt' = this.denaliMiddlewareHelper((container) => jwt(container.lookup('config:environment').jwt));
   }
 );
 
@@ -61,8 +75,8 @@ export default createMixin((BaseAction) =>
  * @returns {boolean}
  */
 function validCorsPreflight({ headers, method }: ResponderParams): boolean {
-  if (method === 'OPTIONS' && headers.has('access-control-request-headers')) {
-    return headers.get('access-control-request-headers').split(',').map((header: string) => {
+  if (method === 'OPTIONS' && 'access-control-request-headers' in headers) {
+    return headers['access-control-request-headers'].split(',').map((header: string) => {
       return header.trim();
     }).includes('authorization');
   } else {
@@ -70,13 +84,12 @@ function validCorsPreflight({ headers, method }: ResponderParams): boolean {
   }
 }
 
-
-let getToken: GetTokenCallback = function ({ headers }: ResponderParams) {
-  if (!headers || !headers.has('authorization')) {
+let defaultGetToken: GetTokenCallback = ({ headers }: ResponderParams): string => {
+  if (!headers || !('authorization' in headers)) {
     throw new Errors.Unauthorized('No authorization header present');
   }
 
-  const parts = headers.get('authorization').split(" ");;
+  const parts = headers['authorization'].split(" ");;
 
   if (parts.length == 2) {
     let [scheme, credentials] = parts;

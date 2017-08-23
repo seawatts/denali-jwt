@@ -34,7 +34,7 @@ to be used by later middleware for authorization and access control.
 For example,
 
 ```javascript
-import { Mixin as JwtMixin, VerifyOptions}from 'denali-jwt';
+import JwtMixin, { VerifyOptions }from 'denali-jwt';
 import { Action } from 'denali';
 
 export default abstract ApplicationAction extends Action.mixin(JwtMixin) {
@@ -47,7 +47,7 @@ export default abstract ApplicationAction extends Action.mixin(JwtMixin) {
 You can specify audience and/or issuer as well:
 
 ```javascript
-verifyOptions: {
+verifyOptions = {
   secret: 'shhhhhhared-secret',
   audience: 'http://myapi/protected',
   issuer: 'http://issuer'
@@ -59,7 +59,7 @@ verifyOptions: {
 If you are using a base64 URL-encoded secret, pass a `Buffer` with `base64` encoding as the secret instead of a string:
 
 ```javascript
-verifyOptions: {
+verifyOptions = {
   secret: new Buffer('shhhhhhared-secret', 'base64')
 };
 ```
@@ -68,7 +68,7 @@ This module also support tokens signed with public/private key pairs. Instead of
 
 ```javascript
 let publicKey = fs.readFileSync('/path/to/public.pub');
-verifyOptions: {
+verifyOptions = {
   secret: publicKey
 };
 ```
@@ -77,7 +77,7 @@ By default, the decoded token is attached to `this.jwt` but can be configured wi
 
 
 ```javascript
-verifyOptions: {
+verifyOptions = {
    secret: publicKey,
    requestProperty: 'auth'
 };
@@ -91,7 +91,7 @@ query parameter or a cookie. You can throw an error in this function and it will
 be handled by `denali-jwt`.
 
 ```javascript
-verifyOptions: {
+verifyOptions = {
   secret: 'hello world !',
   getToken: function fromHeaderOrQuerystring (req) {
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
