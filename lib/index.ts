@@ -8,7 +8,7 @@ import * as uuid from 'uuid';
 
 type MiddlewareFactory = (container: Container) => Promise<Function>;
 
-export async function jwt(verifyOptions: VerifyOptions) {
+async function jwt(verifyOptions: VerifyOptions) {
   return async function middleware(request: ResponderParams) {
     if (validCorsPreflight(request)) {
       return;
