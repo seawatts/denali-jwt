@@ -1,4 +1,4 @@
-export default function environmentConfig(environment) {
+export default function environmentConfig(environment: string) {
   let config = {
     server: {
       port: process.env.PORT || 3000
@@ -6,6 +6,9 @@ export default function environmentConfig(environment) {
     ormAdapter: 'memory',
     database: {
 
+    },
+    'denali-jwt': {
+      secret: '123'
     }
   };
 

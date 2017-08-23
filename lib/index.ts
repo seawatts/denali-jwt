@@ -5,11 +5,16 @@ import * as assert from 'assert';
 import { fromNode } from 'bluebird';
 import { set } from 'lodash';
 import * as uuid from 'uuid';
+import * as createDebug from 'debug';
+
+const debug = createDebug('denali-jwt:mixin');
 
 type MiddlewareFactory = (container: Container) => Promise<Function>;
 
 async function jwt(verifyOptions: VerifyOptions) {
+  debug('calling initial jwt function with verify options');
   return async function middleware(request: ResponderParams) {
+    debug(`Calling actual middleware`);
     if (validCorsPreflight(request)) {
       return;
     }
@@ -39,33 +44,37 @@ async function jwt(verifyOptions: VerifyOptions) {
     }
   }
 }
+function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
+  let middlewareId = uuid.v4();
+  debug(`Assigning middleware - ${middlewareId}`);
+  return async function denaliMiddlewareWrapper() {
+    let meta = this.container.metaFor(this);
+
+    if (!meta.middlewareCache) {
+      debug(`Creating initial meta property on action`);
+      let middlewareCache: { [id: string]: MiddlewareFactory } = {};
+      meta.middlewareCache = middlewareCache;
+    }
+
+    let middleware = meta.middlewareCache[middlewareId];
+
+    if (!middleware) {
+      middleware = meta.middlewareCache[middlewareId] = await middlewareFactory(this.container);
+      debug(`Using uncached middleware - ${middlewareId}`);
+    } else {
+      debug(`Using cached middleware - ${middlewareId}`);
+    }
+
+    return middleware(...arguments);
+  };
+}
+let verifyJwt = denaliMiddlewareHelper((container) => jwt(container.lookup('config:environment')['denali-jwt']));
 
 export default createMixin((BaseAction) =>
   class JwtAction extends BaseAction {
-    before = ['denali-jwt_verifyJwt'];
+    static before = 'verifyJwt';
     jwt: Object | string;
-
-    denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
-      let middlewareId = uuid.v4();
-      return async function denaliMiddlewareWrapper() {
-        let meta = this.container.metaFor(this);
-
-        if (!meta.middlewareCache) {
-          let middlewareCache: { [id: string]: MiddlewareFactory } = {};
-          meta.middlewareCache = middlewareCache;
-        }
-
-        let middleware = meta.middlewareCache[middlewareId];
-
-        if (!middleware) {
-          middleware = meta.middlewareCache[middlewareId] = await middlewareFactory(this.container);
-        }
-
-        return middleware(...arguments);
-      };
-    }
-
-    'denali-jwt_verifyJwt' = this.denaliMiddlewareHelper((container) => jwt(container.lookup('config:environment').jwt));
+    verifyJwt = verifyJwt;
   }
 );
 

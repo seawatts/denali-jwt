@@ -1,6 +1,6 @@
-export default function environmentConfig(environment, appConfig) {
+export default function environmentConfig(environment: string, appConfig: any) {
 
-  appConfig['denali-jwt'] = {
+  let denaliJwtConfig = appConfig['denali-jwt'];
 
-  };
+  appConfig['denali-jwt'] = Object.assign({}, denaliJwtConfig);
 }

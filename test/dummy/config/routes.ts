@@ -1,6 +1,7 @@
-export default function drawRoutes(router) {
+import { Router } from 'denali';
+export default function drawRoutes(router: Router) {
 
-  router.get('/', 'index');
+  router.get('/posts', 'posts/list');
 
   /*
    * # Single routes
