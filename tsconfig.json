@@ -12,9 +12,7 @@
       "baseUrl": ".",
       "skipLibCheck": true,
       "sourceRoot": ".",
-      "types": [
-        "index.d.ts"
-      ]
+      "declaration": true
   },
   "exclude": [ "blueprints/*/files/**", "dist", "tmp"]
 }

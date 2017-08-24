@@ -1,5 +1,5 @@
 import { createMixin, Errors, ResponderParams, Container } from 'denali';
-import { verify, decode } from 'jsonwebtoken';
+import { verify, decode, VerifyOptions as JwtVerifyOptions } from 'jsonwebtoken';
 import { isFunction } from 'util';
 import * as assert from 'assert';
 import { fromNode } from 'bluebird';
@@ -9,12 +9,25 @@ import * as createDebug from 'debug';
 
 const debug = createDebug('denali-jwt:mixin');
 
+export interface VerifyOptions extends JwtVerifyOptions {
+  secret?: SecretCallback | string | Buffer;
+  getToken?: GetTokenCallback,
+  requestProperty?: string;
+}
+export type GetTokenCallback = (request: ResponderParams) => string;
+export type SecretCallback = (request: ResponderParams, header: string, payload: string | Object, callback?: (error: Error, secret: string) => void) => string;
+
+export interface Token extends Object {
+  header: string
+  payload: string
+}
+
 type MiddlewareFactory = (container: Container) => Promise<Function>;
 
 async function jwt(verifyOptions: VerifyOptions) {
-  debug('calling initial jwt function with verify options');
+  let action = this;
+
   return async function middleware(request: ResponderParams) {
-    debug(`Calling actual middleware`);
     if (validCorsPreflight(request)) {
       return;
     }
@@ -37,13 +50,14 @@ async function jwt(verifyOptions: VerifyOptions) {
       let decodedSecret = await getSecret(secret, request, decodedToken);
       let jwt = await fromNode((cb) => verify(token, decodedSecret, verifyOptions, cb));
 
-      set(this, requestProperty || 'jwt', jwt);
+      set(action, requestProperty || 'jwt', jwt);
 
     } catch (err) {
       throw new Errors.Unauthorized(err);
     }
-  }
+  };
 }
+
 function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
   let middlewareId = uuid.v4();
   debug(`Assigning middleware - ${middlewareId}`);
@@ -59,7 +73,7 @@ function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
     let middleware = meta.middlewareCache[middlewareId];
 
     if (!middleware) {
-      middleware = meta.middlewareCache[middlewareId] = await middlewareFactory(this.container);
+      middleware = meta.middlewareCache[middlewareId] = await middlewareFactory(this);
       debug(`Using uncached middleware - ${middlewareId}`);
     } else {
       debug(`Using cached middleware - ${middlewareId}`);
@@ -68,13 +82,13 @@ function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
     return middleware(...arguments);
   };
 }
-let verifyJwt = denaliMiddlewareHelper((container) => jwt(container.lookup('config:environment')['denali-jwt']));
+let verifyJwt = denaliMiddlewareHelper((action) => jwt.call(action, action.config['denali-jwt']));
 
 export default createMixin((BaseAction) =>
   class JwtAction extends BaseAction {
     static before = 'verifyJwt';
     jwt: Object | string;
-    verifyJwt = verifyJwt;
+    'verifyJwt' = verifyJwt;
   }
 );
 
