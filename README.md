@@ -34,20 +34,37 @@ to be used by later middleware for authorization and access control.
 For example,
 
 ```javascript
-import JwtMixin, { VerifyOptions }from 'denali-jwt';
+// config/environment.js
+export default function environmentConfig(environment: any) {
+  let config = {
+    'denali-jwt': {
+      issuer: 'https://mydomain.com/',
+      audience: 'some-audiance',
+      secret: process.env.JWT_SECRET
+      algorithms: ['RS256']
+    }
+  };
+
+  return config;
+```
+
+```javascript
+// app/actions/application.js
+
+import VerifyJwt from 'denali-jwt';
 import { Action } from 'denali';
 
-export default abstract ApplicationAction extends Action.mixin(JwtMixin) {
-  verifyOptions: VerifyOptions = {
-    secret: 'shhhhhhared-secret'
-  };
+export default abstract ApplicationAction extends Action {
+  static before = ['verifyJwt'];
+
+  verifyJwt = VerifyJwt();
 }
 ```
 
 You can specify audience and/or issuer as well:
 
 ```javascript
-verifyOptions = {
+'denali-jwt' = {
   secret: 'shhhhhhared-secret',
   audience: 'http://myapi/protected',
   issuer: 'http://issuer'
@@ -59,7 +76,7 @@ verifyOptions = {
 If you are using a base64 URL-encoded secret, pass a `Buffer` with `base64` encoding as the secret instead of a string:
 
 ```javascript
-verifyOptions = {
+'denali-jwt' = {
   secret: new Buffer('shhhhhhared-secret', 'base64')
 };
 ```
@@ -68,7 +85,7 @@ This module also support tokens signed with public/private key pairs. Instead of
 
 ```javascript
 let publicKey = fs.readFileSync('/path/to/public.pub');
-verifyOptions = {
+'denali-jwt' = {
   secret: publicKey
 };
 ```
@@ -77,7 +94,7 @@ By default, the decoded token is attached to `this.jwt` but can be configured wi
 
 
 ```javascript
-verifyOptions = {
+'denali-jwt' = {
    secret: publicKey,
    requestProperty: 'auth'
 };
@@ -91,7 +108,7 @@ query parameter or a cookie. You can throw an error in this function and it will
 be handled by `denali-jwt`.
 
 ```javascript
-verifyOptions = {
+'denali-jwt' = {
   secret: 'hello world !',
   getToken: function fromHeaderOrQuerystring (req) {
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {

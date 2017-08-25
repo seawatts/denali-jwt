@@ -15,7 +15,7 @@ export interface VerifyOptions extends JwtVerifyOptions {
   requestProperty?: string;
 }
 export type GetTokenCallback = (request: ResponderParams) => string;
-export type SecretCallback = (request: ResponderParams, header: string, payload: string | Object, callback?: (error: Error, secret: string) => void) => string;
+export type SecretCallback = (request: ResponderParams, headerOrPayload: string | object, payload?: string | Object, callback?: (error: Error, secret: string) => void) => string;
 
 export interface Token extends Object {
   header: string
