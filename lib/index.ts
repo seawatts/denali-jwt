@@ -60,11 +60,11 @@ async function jwt(verifyOptions: VerifyOptions): Promise<MiddlewareFunction> {
   };
 }
 
-function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
+function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory): MiddlewareFunction {
   let middlewareId = uuid.v4();
   debug(`Assigning middleware - ${middlewareId}`);
 
-  return async function denaliMiddlewareWrapper(request: ResponderParams) {
+  return async function denaliMiddlewareWrapper(request: ResponderParams): Promise<void> {
     let meta = this.container.metaFor(this);
 
     if (!meta.middlewareCache) {
@@ -85,7 +85,7 @@ function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
     return middleware(request);
   };
 }
-export default function verifyJwt() {
+export default function verifyJwt(): MiddlewareFunction {
   return denaliMiddlewareHelper((action) => jwt.call(action, action.config['denali-jwt']));
 }
 
