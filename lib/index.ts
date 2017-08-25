@@ -1,4 +1,4 @@
-import { createMixin, Errors, ResponderParams, Container } from 'denali';
+import { Errors, ResponderParams, Container, Action } from 'denali';
 import { verify, decode, VerifyOptions as JwtVerifyOptions } from 'jsonwebtoken';
 import { isFunction } from 'util';
 import * as assert from 'assert';
@@ -22,9 +22,11 @@ export interface Token extends Object {
   payload: string
 }
 
-type MiddlewareFactory = (container: Container) => Promise<Function>;
+export type MiddlewareFunction = (request: ResponderParams) => Promise<void>;
 
-async function jwt(verifyOptions: VerifyOptions) {
+export type MiddlewareFactory = (action: Action) => Promise<MiddlewareFunction>;
+
+async function jwt(verifyOptions: VerifyOptions): Promise<MiddlewareFunction> {
   let action = this;
 
   return async function middleware(request: ResponderParams) {
@@ -61,7 +63,8 @@ async function jwt(verifyOptions: VerifyOptions) {
 function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
   let middlewareId = uuid.v4();
   debug(`Assigning middleware - ${middlewareId}`);
-  return async function denaliMiddlewareWrapper() {
+
+  return async function denaliMiddlewareWrapper(request: ResponderParams) {
     let meta = this.container.metaFor(this);
 
     if (!meta.middlewareCache) {
@@ -70,27 +73,29 @@ function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory) {
       meta.middlewareCache = middlewareCache;
     }
 
-    let middleware = meta.middlewareCache[middlewareId];
+    let middleware: MiddlewareFunction = meta.middlewareCache[middlewareId];
 
     if (!middleware) {
-      middleware = meta.middlewareCache[middlewareId] = await middlewareFactory(this);
+      middleware = meta.middlewareCache[middlewareId] = <MiddlewareFunction>await middlewareFactory(this);
       debug(`Using uncached middleware - ${middlewareId}`);
     } else {
       debug(`Using cached middleware - ${middlewareId}`);
     }
 
-    return middleware(...arguments);
+    return middleware(request);
   };
 }
-let verifyJwt = denaliMiddlewareHelper((action) => jwt.call(action, action.config['denali-jwt']));
+export default function verifyJwt() {
+  return denaliMiddlewareHelper((action) => jwt.call(action, action.config['denali-jwt']));
+}
 
-export default createMixin((BaseAction) =>
-  class JwtAction extends BaseAction {
-    static before = 'verifyJwt';
-    jwt: Object | string;
-    'verifyJwt' = verifyJwt;
-  }
-);
+// export default createMixin((BaseAction) =>
+//   class JwtAction extends BaseAction {
+//     static before = 'verifyJwt';
+//     jwt: Object | string;
+//     'verifyJwt' = verifyJwt;
+//   }
+// );
 
 /**
  * Checks if an OPTIONS request with the access-control-request-headers containing authorization is being made

@@ -1,5 +1,8 @@
 import { Action } from 'denali';
-import JwtMixin from 'denali-jwt';
+import VerifyJwt from 'denali-jwt';
 
-export default class ApplicationAction extends Action.mixin(JwtMixin) {
+export default abstract class ApplicationAction extends Action {
+  static before = ['verifyJwt'];
+
+  verifyJwt = VerifyJwt();
 }
