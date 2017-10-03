@@ -1,3 +1,4 @@
+import 'main-dir';
 import { Errors, ResponderParams, Container, Action } from 'denali';
 import { verify, decode, VerifyOptions as JwtVerifyOptions } from 'jsonwebtoken';
 import { isFunction } from 'util';
