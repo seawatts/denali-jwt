@@ -1,18 +1,21 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+      "declaration": true,
       "module": "commonjs",
       "moduleResolution": "node",
       "target": "ES2016",
       "noImplicitAny": true,
       "sourceMap": false,
       "importHelpers": true,
-      "inlineSourceMap": true,
-      "inlineSources": true,
+      "inlineSourceMap": false,
+      "inlineSources": false,
       "baseUrl": ".",
       "skipLibCheck": true,
-      "sourceRoot": ".",
-      "declaration": true
+      "noUnusedLocals": true,
+      "paths": {
+        "denali-jwt": [ "lib/index.ts" ]
+      }
   },
   "exclude": [ "blueprints/*/files/**", "dist", "tmp"]
 }
