@@ -1,7 +1,6 @@
 import 'main-dir';
-import { Errors, ResponderParams, Container, Action } from 'denali';
+import { Errors, ResponderParams, Action } from 'denali';
 import { verify, decode, VerifyOptions as JwtVerifyOptions } from 'jsonwebtoken';
-import { isFunction } from 'util';
 import * as assert from 'assert';
 import { fromNode } from 'bluebird';
 import { set } from 'lodash';
@@ -87,7 +86,7 @@ function denaliMiddlewareHelper(middlewareFactory: MiddlewareFactory): Middlewar
   };
 }
 export default function verifyJwt(): MiddlewareFunction {
-  return denaliMiddlewareHelper((action) => jwt.call(action, action.config['denali-jwt']));
+  return denaliMiddlewareHelper((action) => jwt.call(action, action.config.get('denali-jwt')));
 }
 
 // export default createMixin((BaseAction) =>
