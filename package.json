@@ -3,6 +3,7 @@
   "version": "1.0.0-beta.6",
   "scripts": {
     "build": "denali build",
+    "prepublishOnly": "npm run build",
     "test": "denali test"
   },
   "keywords": [
@@ -25,7 +26,6 @@
     "denali": "^0.0.37",
     "denali-cli": "^0.0.17",
     "denali-typescript": "^0.0.8",
-    "in-publish": "^2.0.0",
     "jsonwebtoken": "^7.4.3",
     "jwks-rsa": "^1.2.0",
     "lodash": "^4.16.4",
